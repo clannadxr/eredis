@@ -137,16 +137,17 @@ func metricInterceptor(compName string, config *config, logger *elog.Component) 
 		func(ctx context.Context, cmd redis.Cmder) error {
 			cost := time.Since(ctx.Value(ctxBegKey).(time.Time))
 			err := cmd.Err()
-			emetric.ClientHandleHistogram.WithLabelValues(emetric.TypeRedis, compName, cmd.Name(), addr).Observe(cost.Seconds())
+			db := cast.ToString(config.DB)
+			emetric.ClientHandleHistogram.WithLabelValues(emetric.TypeRedis, compName, cmd.Name(), addr, db).Observe(cost.Seconds())
 			if err != nil {
 				if errors.Is(err, redis.Nil) {
-					emetric.ClientHandleCounter.Inc(emetric.TypeRedis, compName, cmd.Name(), addr, "Empty")
+					emetric.ClientHandleCounter.Inc(emetric.TypeRedis, compName, cmd.Name(), addr, "Empty", db)
 					return err
 				}
-				emetric.ClientHandleCounter.Inc(emetric.TypeRedis, compName, cmd.Name(), addr, "Error")
+				emetric.ClientHandleCounter.Inc(emetric.TypeRedis, compName, cmd.Name(), addr, "Error", db)
 				return err
 			}
-			emetric.ClientHandleCounter.Inc(emetric.TypeRedis, compName, cmd.Name(), addr, "OK")
+			emetric.ClientHandleCounter.Inc(emetric.TypeRedis, compName, cmd.Name(), addr, "OK", db)
 			return nil
 		},
 	)
